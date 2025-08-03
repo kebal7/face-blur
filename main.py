@@ -5,7 +5,7 @@ import face_recognition
 target_image = face_recognition.load_image_file("target_face.png")
 target_encoding = face_recognition.face_encodings(target_image)[0]
 
-# Load video or webcam
+# Open video file or webcam
 VIDEO_PATH = "video.mp4"  # Use 0 for webcam
 cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -13,6 +13,16 @@ if not cap.isOpened():
     print("❌ Could not open video.")
     exit()
 
+# Get video properties
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS) or 24  # fallback to 24 FPS
+
+# Define the codec and output file
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # use 'XVID' for .avi
+out = cv2.VideoWriter("output_blurred.mp4", fourcc, fps, (frame_width, frame_height))
+
+# Window
 window_name = "Target Face Blur"
 cv2.namedWindow(window_name)
 
@@ -45,21 +55,25 @@ while cap.isOpened():
                 face_roi = cv2.GaussianBlur(face_roi, (99, 99), 30)
                 frame[top:bottom, left:right] = face_roi
 
-    # Show frame
+    # Write frame to output video
+    out.write(frame)
+
+    # Show the frame
     cv2.imshow(window_name, frame)
 
-    # Exit if 'q' is pressed or window is closed
     key = cv2.waitKey(1)
     if key == ord('q'):
         print("👋 Exited by user (q)")
         break
 
-    # Check if window was closed manually (this is the trick 👇)
+    # Detect window close
     if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
         print("❌ Window closed")
         break
 
 # Cleanup
 cap.release()
+out.release()
 cv2.destroyAllWindows()
+print("📁 Saved as: output_blurred.mp4")
 
